@@ -1,0 +1,26 @@
+{
+  "name": "restdiff",
+  "version": "0.1.0",
+  "description": "Rest API Diff tool",
+  "bin": {
+    "restdiff": "src/index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jtwebman/restdiff.git"
+  },
+  "keywords": [
+    "rest",
+    "api",
+    "json",
+    "diff"
+  ],
+  "author": "JT Turner <jtwebman@gmail.com> (https://github.com/jtwebman)",
+  "license": "MIT",
+  "dependencies": {
+    "optimist": "^0.6.1"
+  }
+}
