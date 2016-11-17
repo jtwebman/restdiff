@@ -5,3 +5,5 @@ urls to compare the difference. You can use it to automate your integration test
 before something goes to production.
 
 It will work with any REST API that returns JSON. It can even handle authentication.
+
+Still being worked on, not ready for full production.
