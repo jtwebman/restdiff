@@ -84,8 +84,7 @@ describe('RestDiff', function () {
         }
       ], { async: false }, function (err, results) {
         expect(err).toEqual(null);
-        expect(results[0].test.compared.compare).toEqual(false);
-        expect(err).toNotExist();
+        expect(results[0].test.compared.compare.filter(f => f.equal).length).toBeGreaterThan(0);
         done();
       });
     });

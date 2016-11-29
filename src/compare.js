@@ -1,54 +1,80 @@
 'use strict';
 
+const _ = require('lodash');
+
 function isEqual (value1, value2) {
+  return isEqualValue('/', value1, value2);
+}
+
+function isEqualValue (path, value1, value2) {
   let type = getType(value1);
   if (type !== getType(value2)) {
-    return false;
+    return [{
+      path: path,
+      equal: false,
+      reason: 'Different types',
+      value1: type,
+      value2: getType(value2)
+    }];
   }
 
   if (value1 === value2) {
-    return true;
+    return [{ path: path, equal: true }];
   } else {
     if (type === 'array') {
-      return isEqualArrayNoOrder(value1, value2);
+      return isEqualArrayNoOrder(path, value1, value2);
     }
     if (type === 'object') {
-      return isEqualObject(value1, value2);
+      return isEqualObject(path, value1, value2);
     }
-    return false;
+    return [{
+      path: path,
+      equal: false,
+      reason: 'Not equal',
+      value1: value1,
+      value2: value2
+    }];
   }
 }
 
-function isEqualObject (obj1, obj2) {
-  let keys = Object.keys(obj1);
-
-  if (!isEqualArrayNoOrder(keys, Object.keys(obj2))) {
-    return false;
-  } else {
-    for (let i = 0, len = keys.length; i < len; i++) {
-      if (!isEqual(obj1[keys[i]], obj2[keys[i]])) {
-        return false;
-      }
-    }
-    return true;
-  }
+function isEqualObject (path, obj1, obj2) {
+  return checkAddSelfFinding(path,
+    _.flatten(_.union(Object.keys(obj1), Object.keys(obj2))
+      .map(key => isEqualValue(path + key + '/', obj1[key], obj2[key]))
+    ),
+    'Not all keys are equal');
 }
 
-function isEqualArrayNoOrder (arr1, arr2) {
-  let match = 0;
-  if (arr1.length !== arr2.length) {
-    return false;
+function isEqualArrayNoOrder (path, arr1, arr2) {
+  return checkAddSelfFinding(path,
+    _.flatten(_.concat(
+      compareArrays(path, arr1, arr2),
+      compareArrays(path, arr2, arr1)
+    )),
+    'Not all elements are equal');
+}
+
+function checkAddSelfFinding (path, findings, failReason) {
+  if (_.some(findings, f => !f.equal)) {
+    findings.unshift({ path: path, equal: false, reason: failReason });
   } else {
-    for (let i = 0, len = arr1.length; i < len; i++) {
-      for (let j = 0; j < len; j++) {
-        if (isEqual(arr1[i], arr2[j])) {
-          match++;
-          break;
-        }
-      }
-    }
-    return match === arr1.length;
+    findings.unshift({ path: path, equal: true });
   }
+  return findings;
+}
+
+function compareArrays (path, compareArr1, compareArr2) {
+  return compareArr1.reduce((findings, v1, index, arr) => {
+    if (!_.some(compareArr2, v2 => _.some(isEqualValue(path, v1, v2), f => f.equal))) {
+      findings.push({
+        path: path + index + '/',
+        equal: false,
+        reason: 'Value missing',
+        value: v1
+      });
+    }
+    return findings;
+  }, []);
 }
 
 function getType (value) {
