@@ -1,12 +1,12 @@
 {
   "name": "restdiff",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Rest API Diff tool",
   "bin": {
     "restdiff": "src/index.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "semistandard && mocha"
   },
   "repository": {
     "type": "git",
@@ -21,6 +21,18 @@
   "author": "JT Turner <jtwebman@gmail.com> (https://github.com/jtwebman)",
   "license": "MIT",
   "dependencies": {
-    "optimist": "^0.6.1"
+    "async": "^2.1.4",
+    "lodash": "^4.17.2",
+    "optimist": "^0.6.1",
+    "request": "^2.79.0"
+  },
+  "devDependencies": {
+    "babel-eslint": "^7.1.1",
+    "expect": "^1.20.2",
+    "mocha": "^3.1.2",
+    "semistandard": "*"
+  },
+  "semistandard": {
+    "parser": "babel-eslint"
   }
 }

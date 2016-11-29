@@ -1,0 +1,12 @@
+{
+  "name": "Test1",
+  "delete": false,
+  "health": 100,
+  "ratio": 1.0,
+  "status": {
+    "valid": true
+  },
+  "children": [
+    "testchild1"
+  ]
+}
