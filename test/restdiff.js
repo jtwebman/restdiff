@@ -30,20 +30,20 @@ describe('RestDiff', function () {
     it('can run single request three way test async', function (done) {
       restdiff.run([
         {
-          compare2: {
+          local: {
             uri: 'http://localhost:9000/testdata'
           },
-          compare: {
+          dev: {
             uri: 'http://localhost:9000/testdata'
           },
-          test: {
+          production: {
             uri: 'http://localhost:9000/testdata'
           }
         }
       ], null, function (err, results) {
         expect(err).toEqual(null);
-        expect(results[0].test.compared.compare).toEqual(true);
-        expect(results[0].test.compared.compare2).toEqual(true);
+        expect(results[0].local.compared.dev.match).toEqual(true);
+        expect(results[0].local.compared.production.match).toEqual(true);
         expect(err).toNotExist();
         done();
       });
@@ -52,21 +52,20 @@ describe('RestDiff', function () {
     it('can run single request three way test sync', function (done) {
       restdiff.run([
         {
-          compare2: {
+          local: {
             uri: 'http://localhost:9000/testdata'
           },
-          compare: {
+          dev: {
             uri: 'http://localhost:9000/testdata'
           },
-          test: {
+          production: {
             uri: 'http://localhost:9000/testdata'
           }
         }
       ], { async: false }, function (err, results) {
         expect(err).toEqual(null);
-        expect(results[0].test.compared.compare).toEqual(true);
-        expect(results[0].test.compared.compare2).toEqual(true);
-        expect(err).toNotExist();
+        expect(results[0].local.compared.dev.match).toEqual(true);
+        expect(results[0].local.compared.production.match).toEqual(true);
         done();
       });
     });
@@ -74,17 +73,16 @@ describe('RestDiff', function () {
     it('can run single request async not matching', function (done) {
       restdiff.run([
         {
-          compare: {
-            method: 'PUT',
+          local: {
             uri: 'http://localhost:9000/testdata'
           },
-          test: {
+          production: {
             uri: 'http://localhost:9000/testdata2'
           }
         }
       ], { async: false }, function (err, results) {
         expect(err).toEqual(null);
-        expect(results[0].test.compared.compare.filter(f => f.equal).length).toBeGreaterThan(0);
+        expect(results[0].local.compared.production.match).toEqual(false);
         done();
       });
     });

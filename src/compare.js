@@ -1,9 +1,10 @@
 'use strict';
 
 const _ = require('lodash');
+const result = require('./result');
 
 function isEqual (value1, value2) {
-  return isEqualValue('/', value1, value2);
+  return result.getResults(isEqualValue('/', value1, value2));
 }
 
 function isEqualValue (path, value1, value2) {
