@@ -80,9 +80,44 @@ describe('RestDiff', function () {
             uri: 'http://localhost:9000/testdata2'
           }
         }
-      ], { async: false }, function (err, results) {
+      ], null, function (err, results) {
         expect(err).toEqual(null);
         expect(results[0].local.compared.production.match).toEqual(false);
+        done();
+      });
+    });
+
+    it('if both return empty string they match', function (done) {
+      restdiff.run([
+        {
+          local: {
+            uri: 'http://localhost:9000/emptystring'
+          },
+          production: {
+            uri: 'http://localhost:9000/emptystring'
+          }
+        }
+      ], null, function (err, results) {
+        expect(err).toEqual(null);
+        expect(results[0].local.compared.production.match).toEqual(true);
+        done();
+      });
+    });
+
+    it('if response has invalid json mark match false and give error in findings', function (done) {
+      restdiff.run([
+        {
+          local: {
+            uri: 'http://localhost:9000/invalid'
+          },
+          production: {
+            uri: 'http://localhost:9000/invalid'
+          }
+        }
+      ], null, function (err, results) {
+        expect(err).toEqual(null);
+        expect(results[0].local.compared.production.match).toEqual(false);
+        expect(results[0].local.compared.production.issues.length).toEqual(1);
         done();
       });
     });

@@ -4,6 +4,7 @@ const async = require('async');
 const request = require('request');
 const _ = require('lodash');
 const compare = require('./compare');
+const result = require('./result');
 
 function run (requests, options, cb) {
   let allOptions = _.assign({
@@ -66,12 +67,20 @@ function compareRequests (reqs) {
 }
 
 function compareTwoRequests (testReq, compareReq) {
-  if (testReq.response.statusCode !== compareReq.response.statusCode) return false;
+  try {
+    if (testReq.response.statusCode !== compareReq.response.statusCode) {
+      return result.getFailedResult('Status codes where different.');
+    }
 
-  // If both are undefined, null, or empty string then they are equal
-  if (!testReq.body && !compareReq.body) return true;
+    // If both are undefined, null, or empty string then they are equal
+    if (!testReq.body && !compareReq.body) {
+      return result.getResults([]);
+    }
 
-  return compare.isEqual(JSON.parse(testReq.body), JSON.parse(compareReq.body));
+    return compare.isEqual(JSON.parse(testReq.body), JSON.parse(compareReq.body));
+  } catch (err) {
+    return result.getFailedResult('Exception will comparing: ' + err.toString());
+  }
 }
 
 function getRequestArray (req) {

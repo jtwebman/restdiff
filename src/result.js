@@ -18,6 +18,15 @@ function getResults (findings) {
   };
 }
 
+function getFailedResult (reason) {
+  return {
+    match: false,
+    issues: [ { path: '', reason: reason, equal: false } ],
+    findings: [ { path: '', reason: reason, equal: false } ]
+  };
+}
+
 module.exports = {
-  getResults: getResults
+  getResults: getResults,
+  getFailedResult: getFailedResult
 };
