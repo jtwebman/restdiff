@@ -2,6 +2,7 @@
   "name": "restdiff",
   "version": "1.0.0",
   "description": "Rest API Diff tool",
+  "main": "src/restdiff",
   "bin": {
     "restdiff": "src/index.js"
   },

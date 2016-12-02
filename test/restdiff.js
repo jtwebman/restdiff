@@ -137,4 +137,69 @@ describe('RestDiff', function () {
       });
     });
   });
+
+  describe.only('WriteResults', function () {
+    it('Writes nothing if results is empty', function () {
+      expect(restdiff.resultsToString([])).toEqual('');
+    });
+
+    it('Writes passed for each passed result', function () {
+      expect(restdiff.resultsToString([
+        {
+          name: 'test1',
+          requests: {
+            local: {
+              compared: {
+                prod: []
+              }
+            },
+            prod: {
+              compared: {
+                local: []
+              }
+            }
+          }
+        }
+      ])).toEqual('test1: Passed\n');
+    });
+
+    it('Writes failed for each failed result', function () {
+      expect(restdiff.resultsToString([
+        {
+          name: 'test1',
+          requests: {
+            local: {
+              compared: {
+                prod: [
+                  { path: '/', equal: false, reason: 'Not all keys are equal' },
+                  { path: '/report', equal: false, reason: 'Not all keys are equal' },
+                  { path: '/report/name', equal: false, reason: 'Not equal' }
+                ]
+              }
+            },
+            prod: {
+              compared: {
+                local: [
+                  { path: '/', equal: false, reason: 'Not all keys are equal' },
+                  { path: '/report', equal: false, reason: 'Not all keys are equal' },
+                  { path: '/report/name', equal: false, reason: 'Not equal' }
+                ]
+              }
+            }
+          }
+        }
+      ])).toEqual('test1: Failed!\n' +
+        '\tlocal:\n' +
+        '\t\tprod: Failed\n' +
+        '\t\t\t/: Not all keys are equal\n' +
+        '\t\t\t/report: Not all keys are equal\n' +
+        '\t\t\t/report/name: Not equal\n' +
+        '\tprod:\n' +
+        '\t\tlocal: Failed\n' +
+        '\t\t\t/: Not all keys are equal\n' +
+        '\t\t\t/report: Not all keys are equal\n' +
+        '\t\t\t/report/name: Not equal\n' +
+        '');
+    });
+  });
 });

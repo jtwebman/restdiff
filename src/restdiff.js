@@ -52,8 +52,8 @@ function compareRequestsAsync (req, cb) {
 
 function compareRequests (reqs) {
   return reqs.reduce(function (result, req, index, arr) {
-    result[req.type] = {
-      name: req.name,
+    result.name = req.name;
+    result.requests[req.type] = {
       statusCode: req.response && req.response.statusCode,
       body: req.body,
       compared: {}
@@ -61,14 +61,14 @@ function compareRequests (reqs) {
     for (let i = 0; i < arr.length; i++) {
       if (i !== index) {
         if (result[arr[i].type]) {
-          result[req.type].compared[arr[i].type] = result[arr[i].type].compared[req.type];
+          result.requests[req.type].compared[arr[i].type] = result[arr[i].type].compared[req.type];
         } else {
-          result[req.type].compared[arr[i].type] = compareTwoRequests(req, arr[i]);
+          result.requests[req.type].compared[arr[i].type] = compareTwoRequests(req, arr[i]);
         }
       }
     }
     return result;
-  }, {});
+  }, { requests: [] });
 }
 
 function getOutputToFolderCallBack (options, cb) {
@@ -93,18 +93,19 @@ function getOutputToFolderCallBack (options, cb) {
 
 function getOutputFilesFunction (options) {
   return function handleFileOutputs (result, cb) {
-    async.map(Object.keys(result), getWriteOutputFunction(options, result), cb);
+    async.map(Object.keys(result.requests), getWriteOutputFunction(options, result), cb);
   };
 }
 
 function getWriteOutputFunction (options, result) {
   return function writeOutput (key, cb) {
-    let fullpath = path.join(options.output, key, result[key].name + '.json');
+    let fullpath = path.join(options.output, key, result.name + '.json');
     mkdirp(path.dirname(fullpath), function (err) {
       if (err) {
         cb(err);
       } else {
-        fs.writeFile(fullpath, result[key].body, 'utf8', cb);
+        fs.writeFile(fullpath,
+          JSON.stringify(JSON.parse(result.requests[key].body), null, 2), 'utf8', cb);
       }
     });
   };
@@ -147,6 +148,43 @@ function handleRequest (name, type, cb) {
   };
 }
 
+function resultsToString (results) {
+  return results.reduce((text, r) => {
+    if (_.some(Object.keys(r.requests), reqKey => {
+      return _.some(Object.keys(r.requests[reqKey].compared), compareKey => {
+        return !result.match(r.requests[reqKey].compared[compareKey]);
+      });
+    })) {
+      return text + getFailedResultsString(r);
+    } else {
+      return text + r.name + ': Passed\n';
+    }
+  }, '');
+}
+
+function getFailedResultsString (r) {
+  let text = '';
+  text += r.name + ': Failed!\n';
+  Object.keys(r.requests).forEach(reqKey => {
+    text += '\t' + reqKey + ':\n';
+    Object.keys(r.requests[reqKey].compared).forEach(compareKey => {
+      let matched = result.match(r.requests[reqKey].compared[compareKey]);
+      if (matched) {
+        text += '\t\t' + compareKey + ': Matched\n';
+      } else {
+        text += '\t\t' + compareKey + ': Failed\n';
+        r.requests[reqKey].compared[compareKey].forEach(f => {
+          if (!f.equal) {
+            text += '\t\t\t' + f.path + ': ' + f.reason + '\n';
+          }
+        });
+      }
+    });
+  });
+  return text;
+}
+
 module.exports = {
-  run: run
+  run: run,
+  resultsToString: resultsToString
 };

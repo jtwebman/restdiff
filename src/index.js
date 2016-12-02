@@ -4,7 +4,7 @@
 const program = require('commander');
 const fs = require('fs');
 const pjson = require('../package.json');
-// const restdiff = require('./restdiff');
+const restdiff = require('./restdiff');
 
 let fileText = null;
 
@@ -35,17 +35,21 @@ if (program.stdin) {
 
 function runDiff (requests) {
   if (requests !== null) {
-    /* let results = restdiff.run(JSON.parse(requests), {
-      async: !program.sync
+    restdiff.run(JSON.parse(requests), {
+      async: !program.sync,
       output: program.output
-    }); */
-    console.log(requests);
+    }, (err, results) => {
+      if (err) {
+        console.log('Error: ' + err.toString());
+      } else {
+        console.log(restdiff.resultsToString(results));
+      }
+      process.exit(0);
+    });
   } else {
-    console.log(program);
     console.log('No requests found.');
     process.exit(-1);
   }
-  process.exit(0);
 }
 
 process.on('SIGINT', function () {
