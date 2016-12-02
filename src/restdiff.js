@@ -148,39 +148,45 @@ function handleRequest (name, type, cb) {
   };
 }
 
-function resultsToString (results) {
+function resultsToString (results, options) {
+  let allOptions = _.assign({
+    verbose: false
+  }, options);
+
   return results.reduce((text, r) => {
     if (_.some(Object.keys(r.requests), reqKey => {
       return _.some(Object.keys(r.requests[reqKey].compared), compareKey => {
         return !result.match(r.requests[reqKey].compared[compareKey]);
       });
     })) {
-      return text + getFailedResultsString(r);
+      return text + getFailedResultsString(r, allOptions);
     } else {
       return text + r.name + ': Passed\n';
     }
   }, '');
 }
 
-function getFailedResultsString (r) {
+function getFailedResultsString (r, options) {
   let text = '';
   text += r.name + ': Failed!\n';
-  Object.keys(r.requests).forEach(reqKey => {
-    text += '\t' + reqKey + ':\n';
-    Object.keys(r.requests[reqKey].compared).forEach(compareKey => {
-      let matched = result.match(r.requests[reqKey].compared[compareKey]);
-      if (matched) {
-        text += '\t\t' + compareKey + ': Matched\n';
-      } else {
-        text += '\t\t' + compareKey + ': Failed\n';
-        r.requests[reqKey].compared[compareKey].forEach(f => {
-          if (!f.equal) {
-            text += '\t\t\t' + f.path + ': ' + f.reason + '\n';
-          }
-        });
-      }
+  if (options.verbose) {
+    Object.keys(r.requests).forEach(reqKey => {
+      text += '\t' + reqKey + ':\n';
+      Object.keys(r.requests[reqKey].compared).forEach(compareKey => {
+        let matched = result.match(r.requests[reqKey].compared[compareKey]);
+        if (matched) {
+          text += '\t\t' + compareKey + ': Matched\n';
+        } else {
+          text += '\t\t' + compareKey + ': Failed\n';
+          r.requests[reqKey].compared[compareKey].forEach(f => {
+            if (!f.equal) {
+              text += '\t\t\t' + f.path + ': ' + f.reason + '\n';
+            }
+          });
+        }
+      });
     });
-  });
+  }
   return text;
 }
 
