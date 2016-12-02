@@ -6,27 +6,37 @@ function match (findings) {
   return !_.some(findings, f => !f.equal);
 }
 
-function issues (findings) {
+function getIssues (findings) {
   return findings.filter(f => !f.equal);
 }
 
-function getResults (findings) {
-  return {
-    match: match(findings),
-    issues: issues(findings),
-    findings: findings
-  };
+function getFailedResult (reason) {
+  return [{
+    path: '',
+    reason: reason,
+    equal: false
+  }];
 }
 
-function getFailedResult (reason) {
-  return {
-    match: false,
-    issues: [ { path: '', reason: reason, equal: false } ],
-    findings: [ { path: '', reason: reason, equal: false } ]
-  };
+function getResult (path, equal, reason, value1, value2) {
+  return [{
+    path: path,
+    equal: equal,
+    reason: reason,
+    value1: value1,
+    value2: value2
+  }];
+}
+
+function combine (results1, results2) {
+  return results1.concat(results2);
 }
 
 module.exports = {
-  getResults: getResults,
-  getFailedResult: getFailedResult
+  match: match,
+  getIssues: getIssues,
+  getResult: getResult,
+  getFailedResult: getFailedResult,
+  combine: combine,
+  empty: []
 };

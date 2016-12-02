@@ -6,6 +6,7 @@ const restdiff = require('../src/restdiff');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const result = require('../src/result');
 
 // Configure our HTTP server to use in tests
 var server = http.createServer(function (request, response) {
@@ -30,20 +31,23 @@ describe('RestDiff', function () {
     it('can run single request three way test async', function (done) {
       restdiff.run([
         {
-          local: {
-            uri: 'http://localhost:9000/testdata'
-          },
-          dev: {
-            uri: 'http://localhost:9000/testdata'
-          },
-          production: {
-            uri: 'http://localhost:9000/testdata'
+          name: 'threeWayAsyncMatchTest',
+          requests: {
+            local: {
+              uri: 'http://localhost:9000/testdata'
+            },
+            dev: {
+              uri: 'http://localhost:9000/testdata'
+            },
+            production: {
+              uri: 'http://localhost:9000/testdata'
+            }
           }
         }
       ], null, function (err, results) {
         expect(err).toEqual(null);
-        expect(results[0].local.compared.dev.match).toEqual(true);
-        expect(results[0].local.compared.production.match).toEqual(true);
+        expect(result.match(results[0].local.compared.dev)).toEqual(true);
+        expect(result.match(results[0].local.compared.production)).toEqual(true);
         expect(err).toNotExist();
         done();
       });
@@ -52,20 +56,23 @@ describe('RestDiff', function () {
     it('can run single request three way test sync', function (done) {
       restdiff.run([
         {
-          local: {
-            uri: 'http://localhost:9000/testdata'
-          },
-          dev: {
-            uri: 'http://localhost:9000/testdata'
-          },
-          production: {
-            uri: 'http://localhost:9000/testdata'
+          name: 'threeWaySyncMatchTest',
+          requests: {
+            local: {
+              uri: 'http://localhost:9000/testdata'
+            },
+            dev: {
+              uri: 'http://localhost:9000/testdata'
+            },
+            production: {
+              uri: 'http://localhost:9000/testdata'
+            }
           }
         }
       ], { async: false }, function (err, results) {
         expect(err).toEqual(null);
-        expect(results[0].local.compared.dev.match).toEqual(true);
-        expect(results[0].local.compared.production.match).toEqual(true);
+        expect(result.match(results[0].local.compared.dev)).toEqual(true);
+        expect(result.match(results[0].local.compared.production)).toEqual(true);
         done();
       });
     });
@@ -73,16 +80,19 @@ describe('RestDiff', function () {
     it('can run single request async not matching', function (done) {
       restdiff.run([
         {
-          local: {
-            uri: 'http://localhost:9000/testdata'
-          },
-          production: {
-            uri: 'http://localhost:9000/testdata2'
+          name: 'dontMatchTest',
+          requests: {
+            local: {
+              uri: 'http://localhost:9000/testdata'
+            },
+            production: {
+              uri: 'http://localhost:9000/testdata2'
+            }
           }
         }
       ], null, function (err, results) {
         expect(err).toEqual(null);
-        expect(results[0].local.compared.production.match).toEqual(false);
+        expect(result.match(results[0].local.compared.production)).toEqual(false);
         done();
       });
     });
@@ -90,16 +100,19 @@ describe('RestDiff', function () {
     it('if both return empty string they match', function (done) {
       restdiff.run([
         {
-          local: {
-            uri: 'http://localhost:9000/emptystring'
-          },
-          production: {
-            uri: 'http://localhost:9000/emptystring'
+          name: 'emptystringTest',
+          requests: {
+            local: {
+              uri: 'http://localhost:9000/emptystring'
+            },
+            production: {
+              uri: 'http://localhost:9000/emptystring'
+            }
           }
         }
       ], null, function (err, results) {
         expect(err).toEqual(null);
-        expect(results[0].local.compared.production.match).toEqual(true);
+        expect(result.match(results[0].local.compared.production)).toEqual(true);
         done();
       });
     });
@@ -107,17 +120,19 @@ describe('RestDiff', function () {
     it('if response has invalid json mark match false and give error in findings', function (done) {
       restdiff.run([
         {
-          local: {
-            uri: 'http://localhost:9000/invalid'
-          },
-          production: {
-            uri: 'http://localhost:9000/invalid'
+          name: 'invalidTest',
+          requests: {
+            local: {
+              uri: 'http://localhost:9000/invalid'
+            },
+            production: {
+              uri: 'http://localhost:9000/invalid'
+            }
           }
         }
       ], null, function (err, results) {
         expect(err).toEqual(null);
-        expect(results[0].local.compared.production.match).toEqual(false);
-        expect(results[0].local.compared.production.issues.length).toEqual(1);
+        expect(result.match(results[0].local.compared.production)).toEqual(false);
         done();
       });
     });

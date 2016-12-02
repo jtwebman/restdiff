@@ -4,23 +4,17 @@ const _ = require('lodash');
 const result = require('./result');
 
 function isEqual (value1, value2) {
-  return result.getResults(isEqualValue('/', value1, value2));
+  return isEqualValue('/', value1, value2);
 }
 
 function isEqualValue (path, value1, value2) {
   let type = getType(value1);
   if (type !== getType(value2)) {
-    return [{
-      path: path,
-      equal: false,
-      reason: 'Different types',
-      value1: type,
-      value2: getType(value2)
-    }];
+    return result.getResult(path, false, 'Different types', type, getType(value2));
   }
 
   if (value1 === value2) {
-    return [{ path: path, equal: true }];
+    return result.getResult(path, true);
   } else {
     if (type === 'array') {
       return isEqualArrayNoOrder(path, value1, value2);
@@ -28,13 +22,7 @@ function isEqualValue (path, value1, value2) {
     if (type === 'object') {
       return isEqualObject(path, value1, value2);
     }
-    return [{
-      path: path,
-      equal: false,
-      reason: 'Not equal',
-      value1: value1,
-      value2: value2
-    }];
+    return result.getResult(path, false, 'Not equal', value1, value2);
   }
 }
 
@@ -57,24 +45,20 @@ function isEqualArrayNoOrder (path, arr1, arr2) {
 
 function checkAddSelfFinding (path, findings, failReason) {
   if (_.some(findings, f => !f.equal)) {
-    findings.unshift({ path: path, equal: false, reason: failReason });
+    return result.combine(result.getResult(path, false, failReason), findings);
   } else {
-    findings.unshift({ path: path, equal: true });
+    return result.combine(result.getResult(path, true), findings);
   }
-  return findings;
 }
 
 function compareArrays (path, compareArr1, compareArr2) {
   return compareArr1.reduce((findings, v1, index, arr) => {
     if (!_.some(compareArr2, v2 => _.some(isEqualValue(path, v1, v2), f => f.equal))) {
-      findings.push({
-        path: path + index + '/',
-        equal: false,
-        reason: 'Value missing',
-        value: v1
-      });
+      return result.combine(findings, result.getResult(
+        path + index + '/', false, 'Value missing', v1));
+    } else {
+      return findings;
     }
-    return findings;
   }, []);
 }
 

@@ -10,12 +10,15 @@ let fileText = null;
 
 program
   .version(pjson.version)
-  .arguments('<file>')
+  .arguments('[file]>')
   .action(function (file) {
-    fileText = fs.readFileSync(file, 'utf8');
+    if (file) {
+      fileText = fs.readFileSync(file, 'utf8');
+    }
   })
   .option('-s, --sync', 'Run in synchronous mode')
   .option('-v, --verbose', 'Verbose output')
+  .option('-o, --output [folder]', 'Write all requests to this folder.')
   .option('-i, --stdin', 'Read from standard in')
   .parse(process.argv);
 
@@ -34,9 +37,11 @@ function runDiff (requests) {
   if (requests !== null) {
     /* let results = restdiff.run(JSON.parse(requests), {
       async: !program.sync
+      output: program.output
     }); */
     console.log(requests);
   } else {
+    console.log(program);
     console.log('No requests found.');
     process.exit(-1);
   }

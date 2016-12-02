@@ -5,16 +5,20 @@ const request = require('request');
 const _ = require('lodash');
 const compare = require('./compare');
 const result = require('./result');
+const mkdirp = require('mkdirp');
+const path = require('path');
+const fs = require('fs');
 
 function run (requests, options, cb) {
   let allOptions = _.assign({
-    async: true
+    async: true,
+    output: null
   }, options);
 
   if (allOptions.async) {
-    runAsync(requests, allOptions, cb);
+    runAsync(requests, allOptions, getOutputToFolderCallBack(allOptions, cb));
   } else {
-    runSync(requests, allOptions, cb);
+    runSync(requests, allOptions, getOutputToFolderCallBack(allOptions, cb));
   }
 }
 
@@ -49,6 +53,7 @@ function compareRequestsAsync (req, cb) {
 function compareRequests (reqs) {
   return reqs.reduce(function (result, req, index, arr) {
     result[req.type] = {
+      name: req.name,
       statusCode: req.response && req.response.statusCode,
       body: req.body,
       compared: {}
@@ -66,6 +71,45 @@ function compareRequests (reqs) {
   }, {});
 }
 
+function getOutputToFolderCallBack (options, cb) {
+  return function outputToFolder (err, results) {
+    if (err) {
+      cb(err);
+    } else {
+      if (options.output) {
+        async.map(results, getOutputFilesFunction(options), function () {
+          if (err) {
+            cb(err);
+          } else {
+            cb(null, results);
+          }
+        });
+      } else {
+        cb(null, results);
+      }
+    }
+  };
+}
+
+function getOutputFilesFunction (options) {
+  return function handleFileOutputs (result, cb) {
+    async.map(Object.keys(result), getWriteOutputFunction(options, result), cb);
+  };
+}
+
+function getWriteOutputFunction (options, result) {
+  return function writeOutput (key, cb) {
+    let fullpath = path.join(options.output, key, result[key].name + '.json');
+    mkdirp(path.dirname(fullpath), function (err) {
+      if (err) {
+        cb(err);
+      } else {
+        fs.writeFile(fullpath, result[key].body, 'utf8', cb);
+      }
+    });
+  };
+}
+
 function compareTwoRequests (testReq, compareReq) {
   try {
     if (testReq.response.statusCode !== compareReq.response.statusCode) {
@@ -74,7 +118,7 @@ function compareTwoRequests (testReq, compareReq) {
 
     // If both are undefined, null, or empty string then they are equal
     if (!testReq.body && !compareReq.body) {
-      return result.getResults([]);
+      return result.empty;
     }
 
     return compare.isEqual(JSON.parse(testReq.body), JSON.parse(compareReq.body));
@@ -84,16 +128,17 @@ function compareTwoRequests (testReq, compareReq) {
 }
 
 function getRequestArray (req) {
-  return Object.keys(req).map(function (key) {
+  return Object.keys(req.requests).map(function (key) {
     return function (cb) {
-      request(req[key], handleRequest(key, cb));
+      request(req.requests[key], handleRequest(req.name, key, cb));
     };
   });
 }
 
-function handleRequest (type, cb) {
+function handleRequest (name, type, cb) {
   return function (error, response, body) {
     cb(null, {
+      name: name,
       type: type,
       error: error,
       response: response,
