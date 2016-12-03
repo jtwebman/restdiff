@@ -55,6 +55,6 @@ function runDiff (requests) {
 }
 
 process.on('SIGINT', function () {
-  console.log('Goodbye cruel world');
+  console.log('\nRestDiff stopped, goodbye cruel world!');
   process.exit(0);
 });

@@ -8,6 +8,7 @@ const result = require('./result');
 const mkdirp = require('mkdirp');
 const path = require('path');
 const fs = require('fs');
+const sortedJson = require('./sortedJson');
 
 function run (requests, options, cb) {
   let allOptions = _.assign({
@@ -105,7 +106,7 @@ function getWriteOutputFunction (options, result) {
         cb(err);
       } else {
         fs.writeFile(fullpath,
-          JSON.stringify(JSON.parse(result.requests[key].body), null, 2), 'utf8', cb);
+          sortedJson.sort(JSON.parse(result.requests[key].body), null, 2), 'utf8', cb);
       }
     });
   };
