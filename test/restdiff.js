@@ -138,7 +138,7 @@ describe('RestDiff', function () {
     });
   });
 
-  describe.only('WriteResults', function () {
+  describe('WriteResults', function () {
     it('Writes nothing if results is empty', function () {
       expect(restdiff.resultsToString([])).toEqual('');
     });

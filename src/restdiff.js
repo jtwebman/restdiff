@@ -10,16 +10,18 @@ const path = require('path');
 const fs = require('fs');
 const sortedJson = require('./sortedJson');
 
+let allOptions;
+
 function run (requests, options, cb) {
-  let allOptions = _.assign({
+  allOptions = _.assign({
     async: true,
     output: null
   }, options);
 
   if (allOptions.async) {
-    runAsync(requests, allOptions, getOutputToFolderCallBack(allOptions, cb));
+    runAsync(requests, allOptions, cb);
   } else {
-    runSync(requests, allOptions, getOutputToFolderCallBack(allOptions, cb));
+    runSync(requests, allOptions, cb);
   }
 }
 
@@ -32,11 +34,43 @@ function runAsync (requests, options, cb) {
 }
 
 function compareRequestsSync (req, cb) {
+  console.log('Pulling: ' + req.name);
   async.series(getRequestArray(req), function (err, results) {
     if (err) {
       cb(err);
     } else {
-      cb(null, compareRequests(results));
+      let result = compareRequests(results);
+      console.log(getSingleResultString(result, allOptions));
+      if (allOptions.output) {
+        async.mapSeries(Object.keys(result.requests), (key, cb) => {
+          let fullpath = path.join(allOptions.output, key, result.name + '.json');
+          mkdirp(path.dirname(fullpath), function (err) {
+            if (err) {
+              cb(err);
+            } else {
+              let writeVal;
+              try {
+                let jsonReport = JSON.parse(result.requests[key].body);
+                if (!jsonReport.total_count) {
+                  console.log(req.name + ' has no data on "' + key + '".');
+                }
+                writeVal = sortedJson.sort(jsonReport);
+              } catch (err) {
+                console.log(req.name + ' not json on "' + key + '".');
+                if (result.requests[key].error) {
+                  writeVal = result.requests[key].error;
+                } else {
+                  writeVal = result.requests[key].body;
+                }
+              }
+              fs.writeFile(fullpath, writeVal, 'utf8', cb);
+            }
+          });
+        }, err => {
+          if (err) cb(err);
+          cb(null, result);
+        });
+      }
     }
   });
 }
@@ -57,8 +91,10 @@ function compareRequests (reqs) {
     result.requests[req.type] = {
       statusCode: req.response && req.response.statusCode,
       body: req.body,
+      error: req.error,
       compared: {}
     };
+    /*
     for (let i = 0; i < arr.length; i++) {
       if (i !== index) {
         if (result[arr[i].type]) {
@@ -67,7 +103,7 @@ function compareRequests (reqs) {
           result.requests[req.type].compared[arr[i].type] = compareTwoRequests(req, arr[i]);
         }
       }
-    }
+    } */
     return result;
   }, { requests: [] });
 }
@@ -106,7 +142,7 @@ function getWriteOutputFunction (options, result) {
         cb(err);
       } else {
         fs.writeFile(fullpath,
-          sortedJson.sort(JSON.parse(result.requests[key].body), null, 2), 'utf8', cb);
+          JSON.stringify(JSON.parse(result.requests[key].body), null, 2), 'utf8', cb);
       }
     });
   };
@@ -139,6 +175,7 @@ function getRequestArray (req) {
 
 function handleRequest (name, type, cb) {
   return function (error, response, body) {
+    if (error) console.log('error:', error);
     cb(null, {
       name: name,
       type: type,
@@ -155,16 +192,20 @@ function resultsToString (results, options) {
   }, options);
 
   return results.reduce((text, r) => {
-    if (_.some(Object.keys(r.requests), reqKey => {
-      return _.some(Object.keys(r.requests[reqKey].compared), compareKey => {
-        return !result.match(r.requests[reqKey].compared[compareKey]);
-      });
-    })) {
-      return text + getFailedResultsString(r, allOptions);
-    } else {
-      return text + r.name + ': Passed\n';
-    }
+    return text + getSingleResultString(r, allOptions);
   }, '');
+}
+
+function getSingleResultString (r, options) {
+  if (_.some(Object.keys(r.requests), reqKey => {
+    return _.some(Object.keys(r.requests[reqKey].compared), compareKey => {
+      return !result.match(r.requests[reqKey].compared[compareKey]);
+    });
+  })) {
+    return getFailedResultsString(r, options);
+  } else {
+    return r.name + ': Passed\n';
+  }
 }
 
 function getFailedResultsString (r, options) {

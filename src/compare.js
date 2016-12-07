@@ -36,10 +36,7 @@ function isEqualObject (path, obj1, obj2) {
 
 function isEqualArrayNoOrder (path, arr1, arr2) {
   return checkAddSelfFinding(path,
-    _.flatten(_.concat(
-      compareArrays(path, arr1, arr2),
-      compareArrays(path, arr2, arr1)
-    )),
+    compareArrays(path, arr1, arr2),
     'Not all elements are equal');
 }
 
@@ -52,14 +49,34 @@ function checkAddSelfFinding (path, findings, failReason) {
 }
 
 function compareArrays (path, compareArr1, compareArr2) {
-  return compareArr1.reduce((findings, v1, index, arr) => {
-    if (!_.some(compareArr2, v2 => _.some(isEqualValue(path, v1, v2), f => f.equal))) {
-      return result.combine(findings, result.getResult(
-        path + index + '/', false, 'Value missing', v1));
-    } else {
-      return findings;
+  let results = [];
+  if (compareArr1.length !== compareArr2.length) {
+    results.push({
+      path: path,
+      equal: false,
+      reason: 'Arrays different size'
+    });
+  } else {
+    for (let i = 0; i < compareArr1.length; i++) {
+      let found = false;
+      for (let j = 0; j < compareArr2.length; j++) {
+        let compare = isEqualValue(path, compareArr1[i], compareArr2[j]);
+        if (compare[0].equal) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        results.push({
+          path: path + i + '/',
+          equal: false,
+          reason: 'Value missing',
+          value1: compareArr1[i]
+        });
+      }
     }
-  }, []);
+  }
+  return results;
 }
 
 function getType (value) {

@@ -60,7 +60,7 @@ function getKeyStringSpace (options, level) {
 }
 
 function getKeyStringEnd (options, comma) {
-  return comma ? ',' : '' + options.newlines ? '\n' : ' ';
+  return (comma ? ',' : '') + (options.newlines ? '\n' : ' ');
 }
 
 function sortJsonObject (options, level, key, json) {
@@ -68,16 +68,45 @@ function sortJsonObject (options, level, key, json) {
   '{' + getKeyStringEnd(options, false) +
   Object.keys(json).sort().map(objKey =>
     sortJson(options, level + 1, objKey, json[objKey])
-  ).join(getKeyStringEnd(options, true)) +
-  getKeyStringSpace(options, level) + getKeyStringEnd(options, false) + '}');
+  ).join(',\n') + '\n' +
+  getKeyStringSpace(options, level) + '}');
 }
 
 function sortJsonArray (options, level, key, json) {
   return getKeyString(options, level, key,
   '[' + getKeyStringEnd(options, false) +
-  json.map(val => sortJson(options, level + 1, '', val)).sort()
-    .join(getKeyStringEnd(options, true)) +
-  getKeyStringSpace(options, level) + getKeyStringEnd(options, false) + ']');
+  json.map(val => sortJson(options, level + 1, '', val)).sort(compareJson)
+    .join(',\n') +
+  getKeyStringEnd(options, false) +
+  getKeyStringSpace(options, level) + ']');
+}
+
+function compareJson (x, y) {
+  if (getType(x) !== getType(y)) {
+    return -1;
+  }
+  switch (getType(x)) {
+    case 'object':
+      for (let key in x) {
+        let keyCompare = compareJson(x[key], y[key]);
+        if (keyCompare !== 0) return keyCompare;
+      }
+      return 0;
+    case 'array':
+      return x.length - y.length;
+    case 'null':
+      return 0;
+    case 'number':
+      return x - y;
+    case 'boolean':
+      if (x === true && y === false) return 1;
+      if (x === false && y === true) return -1;
+      return 0;
+    case 'string':
+      return x.localeCompare(y);
+    default: // function, symbol, and undefined return nothing
+      return 0;
+  }
 }
 
 function getType (value) {

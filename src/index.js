@@ -42,9 +42,9 @@ function runDiff (requests) {
       if (err) {
         console.log('Error: ' + err.toString());
       } else {
-        console.log(restdiff.resultsToString(results, {
+        /* console.log(restdiff.resultsToString(results, {
           verbose: program.verbose
-        }));
+        })); */
       }
       process.exit(0);
     });
