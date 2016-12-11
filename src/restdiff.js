@@ -3,12 +3,12 @@
 const async = require('async');
 const request = require('request');
 const _ = require('lodash');
-const compare = require('./compare');
 const result = require('./result');
 const mkdirp = require('mkdirp');
 const path = require('path');
 const fs = require('fs');
-const sortedJson = require('./sortedJson');
+const jsonType = require('./jsonType');
+const jsonDiff = require('./jsonDiff');
 
 let allOptions;
 
@@ -54,7 +54,7 @@ function compareRequestsSync (req, cb) {
                 if (!jsonReport.total_count) {
                   console.log(req.name + ' has no data on "' + key + '".');
                 }
-                writeVal = sortedJson.sort(jsonReport);
+                writeVal = JSON.stringify(jsonType.sort(jsonReport));
               } catch (err) {
                 console.log(req.name + ' not json on "' + key + '".');
                 if (result.requests[key].error) {
@@ -94,75 +94,17 @@ function compareRequests (reqs) {
       error: req.error,
       compared: {}
     };
-    /*
     for (let i = 0; i < arr.length; i++) {
       if (i !== index) {
         if (result[arr[i].type]) {
           result.requests[req.type].compared[arr[i].type] = result[arr[i].type].compared[req.type];
         } else {
-          result.requests[req.type].compared[arr[i].type] = compareTwoRequests(req, arr[i]);
+          result.requests[req.type].compared[arr[i].type] = jsonDiff.diff(req, arr[i]);
         }
       }
-    } */
+    }
     return result;
   }, { requests: [] });
-}
-
-function getOutputToFolderCallBack (options, cb) {
-  return function outputToFolder (err, results) {
-    if (err) {
-      cb(err);
-    } else {
-      if (options.output) {
-        async.map(results, getOutputFilesFunction(options), function () {
-          if (err) {
-            cb(err);
-          } else {
-            cb(null, results);
-          }
-        });
-      } else {
-        cb(null, results);
-      }
-    }
-  };
-}
-
-function getOutputFilesFunction (options) {
-  return function handleFileOutputs (result, cb) {
-    async.map(Object.keys(result.requests), getWriteOutputFunction(options, result), cb);
-  };
-}
-
-function getWriteOutputFunction (options, result) {
-  return function writeOutput (key, cb) {
-    let fullpath = path.join(options.output, key, result.name + '.json');
-    mkdirp(path.dirname(fullpath), function (err) {
-      if (err) {
-        cb(err);
-      } else {
-        fs.writeFile(fullpath,
-          JSON.stringify(JSON.parse(result.requests[key].body), null, 2), 'utf8', cb);
-      }
-    });
-  };
-}
-
-function compareTwoRequests (testReq, compareReq) {
-  try {
-    if (testReq.response.statusCode !== compareReq.response.statusCode) {
-      return result.getFailedResult('Status codes where different.');
-    }
-
-    // If both are undefined, null, or empty string then they are equal
-    if (!testReq.body && !compareReq.body) {
-      return result.empty;
-    }
-
-    return compare.isEqual(JSON.parse(testReq.body), JSON.parse(compareReq.body));
-  } catch (err) {
-    return result.getFailedResult('Exception will comparing: ' + err.toString());
-  }
 }
 
 function getRequestArray (req) {

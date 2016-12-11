@@ -2,41 +2,42 @@
 
 const _ = require('lodash');
 
-function match (findings) {
-  return !_.some(findings, f => !f.equal);
+function match (results) {
+  return !_.some(results.log, f => !f.match);
 }
 
-function getIssues (findings) {
-  return findings.filter(f => !f.equal);
+function getFailed (results) {
+  return results.log.filter(f => !f.match);
 }
 
-function getFailedResult (reason) {
-  return [{
-    path: '',
-    reason: reason,
-    equal: false
-  }];
+function addMatch (results, path) {
+  if (results.options.trackMatches) {
+    results.log.push({
+      path: path,
+      match: true
+    });
+  }
+  return results;
 }
 
-function getResult (path, equal, reason, value1, value2) {
-  return [{
+function addFailed (results, path, message) {
+  results.log.push({
     path: path,
-    equal: equal,
-    reason: reason,
-    value1: value1,
-    value2: value2
-  }];
-}
-
-function combine (results1, results2) {
-  return results1.concat(results2);
+    match: false,
+    message: message
+  });
+  return results;
 }
 
 module.exports = {
+  addMatch: addMatch,
+  addFailed: addFailed,
   match: match,
-  getIssues: getIssues,
-  getResult: getResult,
-  getFailedResult: getFailedResult,
-  combine: combine,
-  empty: []
+  getFailed: getFailed,
+  empty: {
+    options: {
+      trackMatches: false
+    },
+    log: []
+  }
 };
